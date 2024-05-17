@@ -1,0 +1,56 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sat May 18 03:35:12 2024
+
+@author: JOSHUA
+"""
+
+import numpy as np
+import mathplotlib.pyplot as plt
+
+# Generate synthetic data
+np.random.seed(42)
+X = np.linspace(0, 10, 100)
+true_slope = 2
+true_intercept = 5
+true_noise = 2
+Y = true_slope * X + true_intercept + np.random.normal(0, true_noise, size=X.shape[0])
+
+def bayesian_linear_regression(X, Y, num_samples=1000):
+    
+    prior_mean = np.zeros((2,))
+    prior_covariance = np.eye(2) * 1  # Identity matrix 
+    
+    # Compute posterior
+    X_augmented = np.vstack([np.ones_like(X), X]).T
+    posterior_covariance = np.linalg.inv(np.linalg.inv(prior_covariance) + (1 / true_noise**2) * np.dot(X_augmented.T, X_augmented))
+    posterior_mean = np.dot(posterior_covariance, np.dot(np.linalg.inv(prior_covariance), prior_mean) + (1 / true_noise**2) * np.dot(X_augmented.T, Y))
+    
+    # Sample from the posterior
+    weights_samples = np.random.multivariate_normal(posterior_mean, posterior_covariance, size=num_samples)
+    
+    return weights_samples
+
+# Make predictions from the model
+def predict(X, weights_samples):
+    X_augmented = np.vstack([np.ones_like(X), X]).T
+    predictions = np.dot(X_augmented, weights_samples.T)
+    return predictions
+
+# Visualize the predictions
+def plot_predictions(X, Y, predictions):
+    plt.scatter(X, Y,)
+    plt.plot(X, np.mean(predictions, axis=1))
+    plt.fill_between(X, np.percentile(predictions, 2.5, axis=1), np.percentile(predictions, 97.5, axis=1), color='b', alpha=0.3)
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    plt.title('Bayesian Linear Regression')
+    plt.legend()
+    plt.show()
+
+# Run Bayesian linear regression
+weights_samples = bayesian_linear_regression(X, Y)
+predictions = predict(X, weights_samples)
+
+# Plot predictions
+plot_predictions(X, Y, predictions)
